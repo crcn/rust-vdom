@@ -5,6 +5,13 @@ mod parser;
 use parser::*;
 
 fn main() {
-    parse("<a />");
+    match parse("<a />") {
+        Ok(ast) => {
+            println!("{:?}", ast);
+        },
+        Err(err) => {
+            println!("ERR: {}", err);
+        }
+    }
 }
 

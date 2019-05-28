@@ -19,7 +19,9 @@ pub struct Tokenizer<'a> {
 
 impl<'a> Tokenizer<'a> {
   pub fn new(scanner: Scanner<'a>) -> Tokenizer {
-    Tokenizer { scanner, current: None }
+    let mut tokenizer = Tokenizer { scanner, current: None };
+    tokenizer.next();
+    tokenizer
   }
   pub fn ended(&self) -> bool {
     self.scanner.ended()
