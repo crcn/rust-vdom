@@ -1,8 +1,8 @@
 
 #[derive(Debug)]
 pub struct Attribute {
-  name: String,
-  value: String
+  pub name: String,
+  pub value: String
 }
 
 #[derive(Debug)]

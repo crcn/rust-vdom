@@ -1,4 +1,5 @@
 use std::cmp::min;
+use std::cmp::max;
 
 pub struct Scanner<'a> {
   source: &'a [u8],
@@ -23,6 +24,15 @@ impl<'a> Scanner<'a> {
     }
   }
 
+  pub fn prev(&mut self) -> Option<u8> {
+    self.index = max(0, self.index - 1);
+    if self.index > 0 {
+      Some(self.source[self.index])
+    } else {
+      None
+    }
+  }
+
   pub fn peek(&mut self, step: usize) -> Option<u8> {
     let index = self.index;
     self.index = index + (step - 1);
@@ -41,6 +51,7 @@ impl<'a> Scanner<'a> {
           if filter(c) {
             buffer.push(c);
           } else {
+            self.prev();
             break;
           }
          },

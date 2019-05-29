@@ -7,7 +7,12 @@ pub enum Token {
   Backslash,    // /
   GreaterThan,  // >
   Colon,        // :
-  CloseTag,     // />
+  Whitespace,   // \s\r\n\t
+  Equals,       // =
+  String(String),       // "aa" | 'aa'
+  SINGLE_QUOTE, // '
+  DOUBLE_QUOTE, // "
+  SelfCloseTag,     // />
   Text(String), // a-z0-9
   Unknown(u8)   
 }
@@ -26,6 +31,23 @@ impl<'a> Tokenizer<'a> {
   pub fn ended(&self) -> bool {
     self.scanner.ended()
   }
+  pub fn eat_whitespace(&mut self) {
+    loop {
+      match &self.current {
+        Some(token) => match token {
+          Token::Whitespace => {
+            self.next();
+          },
+          _ => {
+            break;
+          }
+        },
+        None => {
+          break;
+        }
+      }
+    }
+  }
   pub fn next<'b>(&mut self) -> &Option<Token> {
     if self.scanner.ended() {
       self.current = None;
@@ -38,13 +60,24 @@ impl<'a> Tokenizer<'a> {
       b':' => Token::Colon,
       b'<' => Token::LessThan,
       b'>' => Token::GreaterThan,
+      b'=' => Token::Equals,
+      b'\'' | b'"' => {
+        let mut buffer = vec![];
+        buffer.append(&mut self.scanner.scan(|c2| c2 != c));
+        self.scanner.next(); // eat quote
+        Token::String(String::from_utf8(buffer).unwrap())
+      },
+      b' ' | b'\r' | b'\n' | b'\t' => {
+        self.scanner.scan(|c| is_whitespace(c));
+        Token::Whitespace
+      }
       b'/' => {
         match self.scanner.peek(1) {
           Some(c) => {
             match c {
               b'>' => {
                 self.scanner.next(); // eat }
-                Token::CloseTag
+                Token::SelfCloseTag
               }
               _ => {
                 Token::Backslash
@@ -58,7 +91,7 @@ impl<'a> Tokenizer<'a> {
       },
       b'a'...b'z' => {
         let mut buffer = vec![c];
-        buffer.append(&mut self.scanner.scan(|c| c != b' '));
+        buffer.append(&mut self.scanner.scan(|c| c != b' ' && c != b'='));
         let buffer: String = String::from_utf8(buffer).unwrap();
         Token::Text(buffer)
       }
@@ -71,4 +104,8 @@ impl<'a> Tokenizer<'a> {
     self.current = Some(token);
     &self.current
   }
+}
+
+fn is_whitespace(c: u8) -> bool {
+  c == b' ' || c == b'\r' || c == b'\n' || c == b'\t'
 }
