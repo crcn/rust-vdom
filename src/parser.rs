@@ -31,11 +31,11 @@ fn parse_root(tokenizer: &mut Tokenizer) -> Result<Node, String> {
 }
 
 
-fn parse_nodes<TUntil>(tokenizer: &mut Tokenizer, until: TUntil) -> Result<Vec<Node>, String>
-  where TUntil: Fn(&mut Tokenizer) -> bool
+fn parse_nodes<TTest>(tokenizer: &mut Tokenizer, test: TTest) -> Result<Vec<Node>, String>
+  where TTest: Fn(&mut Tokenizer) -> bool
  {
   let mut nodes: Vec<Node> = vec![];
-  while (until)(tokenizer) {
+  while (test)(tokenizer) {
     match parse_node(tokenizer) {
       Ok(expr) => {
         nodes.push(expr);
@@ -55,6 +55,9 @@ fn parse_node(tokenizer: &mut Tokenizer) -> Result<Node, String> {
         Token::LessThan => {
           parse_element(tokenizer)
         },
+        Token::Text(_) => {
+          parse_text(tokenizer)
+        }
         Token::Unknown(_) => {
           Err(get_unexpected_token_error(&tokenizer))
         },
@@ -94,9 +97,94 @@ fn parse_element(tokenizer: &mut Tokenizer) -> Result<Node, String> {
     Err(err) => return Err(err)
   };
 
-  tokenizer.next();  // eat />
+  let children: Option<Vec<Node>> = match &tokenizer.current {
+    Some(token) => match token {
+      Token::GreaterThan => {
+        tokenizer.next();
+        match parse_children(&tag_name, tokenizer) {
+          Ok(children) => Some(children),
+          Err(err) => return Err(err)
+        }
+      },
+      Token::SelfCloseTag => {
+        tokenizer.next();  // eat />
+        None
+      },
+      _ => {
+        return Err(get_unexpected_token_error(tokenizer));
+      }
+    },
+    None => {
+      return Err(get_unexpected_token_error(tokenizer));
+    }
+  };
 
-  Ok(Node::Element(Element { tag_name: tag_name.to_owned(), attributes }))
+  match children {
+    Some(children) => {
+      match &tokenizer.current {
+        Some(token) => match token {
+          Token::StartCloseTag => {
+            tokenizer.next(); // eat </
+          }
+          _ => {
+            println!("TOK: {:?}", token);
+            return Err(get_unexpected_token_error(tokenizer));
+          }
+        },
+        None => {
+          return Err(get_unexpected_token_error(tokenizer));
+        }
+      }
+      tokenizer.next(); // eat tag name
+      tokenizer.next(); // eat >
+      Ok(Node::Element(Element { tag_name: tag_name.to_owned(), attributes, children }))
+    },
+    None => {
+      Ok(Node::Element(Element { tag_name: tag_name.to_owned(), attributes, children: vec![] }))
+    }
+  }
+  
+}
+
+fn parse_text(tokenizer: &mut Tokenizer) -> Result<Node, String> {
+  let mut buffer = String::from("");
+  loop {
+    match &tokenizer.current {
+      Some(token) => {
+        match token {
+          Token::Text(value) => {
+            buffer.push_str(value);
+          }
+          Token::LessThan | Token::StartCloseTag => {
+            break;
+          }
+          _a => {
+            println!("Unhandled token found {:?}", _a);
+          }
+        }
+      },
+      None => {
+        break;
+      }
+    }
+    tokenizer.next();
+  }
+
+  Ok(Node::Text(Text { value: buffer }))
+}
+
+fn parse_children(tag_name: &String, tokenizer: &mut Tokenizer) -> Result<Vec<Node>, String> {
+  let test = |tokenizer: &mut Tokenizer| match &tokenizer.current {
+    Some(token) => {
+      token != &Token::StartCloseTag
+    },
+    None => true
+  };
+  
+  match parse_nodes(tokenizer, test) {
+    Ok(children) => Ok(children),
+    Err(err) => Err(err)
+  }
 }
 
 fn parse_attributes(tokenizer: &mut Tokenizer) -> Result<Vec<Attribute>, String> {
@@ -136,7 +224,7 @@ fn parse_attribute(tokenizer: &mut Tokenizer) -> Result<Attribute, String> {
 
 
   tokenizer.next(); // eat name
-  println!("{:?}", tokenizer.current);
+  println!("Token: {:?}", tokenizer.current);
   
   let value = match &tokenizer.current {
     Some(token) => match token {

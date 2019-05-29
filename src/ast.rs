@@ -8,7 +8,8 @@ pub struct Attribute {
 #[derive(Debug)]
 pub struct Element {
   pub tag_name: String,
-  pub attributes: Vec<Attribute>
+  pub attributes: Vec<Attribute>,
+  pub children: Vec<Node>
 }
 
 

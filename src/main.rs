@@ -5,7 +5,7 @@ mod parser;
 use parser::*;
 
 fn main() {
-    match parse("<a>b</a>") {
+    match parse("<a>b<span c='d'>c</span></a>") {
         Ok(ast) => {
             println!("{:?}", ast);
         },

@@ -1,6 +1,7 @@
 use crate::scanner::Scanner;
 
 #[derive(Debug)]
+#[derive(PartialEq)]
 pub enum Token {
   Comment(String),      // /* comment */
   LessThan,     // <
@@ -10,9 +11,8 @@ pub enum Token {
   Whitespace,   // \s\r\n\t
   Equals,       // =
   String(String),       // "aa" | 'aa'
-  SINGLE_QUOTE, // '
-  DOUBLE_QUOTE, // "
   SelfCloseTag,     // />
+  StartCloseTag,     // </
   Text(String), // a-z0-9
   Unknown(u8)   
 }
@@ -58,7 +58,19 @@ impl<'a> Tokenizer<'a> {
 
     let token = match c {
       b':' => Token::Colon,
-      b'<' => Token::LessThan,
+      b'<' => {
+        match self.scanner.peek(1) {
+          Some(c) => {
+            if c == b'/' {
+              self.scanner.next(); // eat /
+              Token::StartCloseTag
+            } else {
+              Token::LessThan
+            }
+          }
+          None => Token::LessThan
+        }
+      },
       b'>' => Token::GreaterThan,
       b'=' => Token::Equals,
       b'\'' | b'"' => {
@@ -74,14 +86,11 @@ impl<'a> Tokenizer<'a> {
       b'/' => {
         match self.scanner.peek(1) {
           Some(c) => {
-            match c {
-              b'>' => {
-                self.scanner.next(); // eat }
-                Token::SelfCloseTag
-              }
-              _ => {
-                Token::Backslash
-              }
+            if c == b'>' {
+              self.scanner.next(); // eat >
+              Token::SelfCloseTag
+            } else {
+              Token::Backslash
             }
           },
           None => {
@@ -91,7 +100,7 @@ impl<'a> Tokenizer<'a> {
       },
       b'a'...b'z' => {
         let mut buffer = vec![c];
-        buffer.append(&mut self.scanner.scan(|c| c != b' ' && c != b'='));
+        buffer.append(&mut self.scanner.scan(|c| c != b' ' && c != b'=' && c != b'>' && c != b'<'));
         let buffer: String = String::from_utf8(buffer).unwrap();
         Token::Text(buffer)
       }
