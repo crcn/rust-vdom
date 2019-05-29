@@ -47,6 +47,7 @@ fn parse_nodes<TTest>(tokenizer: &mut Tokenizer, test: TTest) -> Result<Vec<Node
 }
 
 fn parse_node(tokenizer: &mut Tokenizer) -> Result<Node, String> {
+  tokenizer.eat_whitespace();
   match &tokenizer.current {
     Some(token) => {
       match token {
@@ -57,6 +58,7 @@ fn parse_node(tokenizer: &mut Tokenizer) -> Result<Node, String> {
           parse_text(tokenizer)
         }
         Token::Unknown(_) => {
+          println!("{:?}", tokenizer.current);
           Err(get_unexpected_token_error(&tokenizer))
         },
         _ => {

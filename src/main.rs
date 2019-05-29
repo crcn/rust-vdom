@@ -2,6 +2,7 @@ mod tokenizer;
 mod scanner;
 mod ast;
 mod parser;
+mod diff_patch;
 use parser::*;
 use std::time::{SystemTime, UNIX_EPOCH};
 fn main() {
@@ -11,14 +12,18 @@ fn main() {
         Err(_) => panic!("Cannot get time")
     };
 
-    for i in 0..100 {
-        match parse("<a b='a'></a>") {
-            Ok(ast) => {
-                // println!("{:?}", ast);
-            },
-            Err(err) => {
-                // println!("ERR: {}", err);
-            }
+    let source = "
+        <div style='color: red;'>
+            Hello
+        </div>
+    ";
+
+    match parse(source) {
+        Ok(ast) => {
+            println!("{:?}", ast);
+        },
+        Err(err) => {
+            println!("ERR: {}", err);
         }
     }
 

@@ -1,7 +1,11 @@
 [package]
-name = "html-parser"
+name = "rust-vdom"
 version = "0.1.0"
 authors = ["Craig Condon <craig.j.condon@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+wasm-bindgen = "0.2"
+
+[lib]
+crate-type = ["cdylib", "rlib"]

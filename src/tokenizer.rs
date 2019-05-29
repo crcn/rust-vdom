@@ -98,7 +98,7 @@ impl<'a> Tokenizer<'a> {
           }
         }
       },
-      b'a'...b'z' => {
+      b'a'...b'z' | b'A'...b'Z' | b'0'...b'9' => {
         let mut buffer = vec![c];
         buffer.append(&mut self.scanner.scan(|c| c != b' ' && c != b'=' && c != b'>' && c != b'<'));
         let buffer: String = String::from_utf8(buffer).unwrap();
