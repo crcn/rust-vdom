@@ -1,10 +1,8 @@
+
+
 use crate::scanner::*;
 use crate::tokenizer::*;
 use crate::ast::*;
-// use crate::tokenizer;
-// use scanner;
-
-
 
 
 pub fn parse(source: &str) -> Result<Node, String> {
@@ -127,7 +125,6 @@ fn parse_element(tokenizer: &mut Tokenizer) -> Result<Node, String> {
             tokenizer.next(); // eat </
           }
           _ => {
-            println!("TOK: {:?}", token);
             return Err(get_unexpected_token_error(tokenizer));
           }
         },
@@ -222,9 +219,7 @@ fn parse_attribute(tokenizer: &mut Tokenizer) -> Result<Attribute, String> {
     None => return Err(get_unexpected_token_error(tokenizer))
   };
 
-
   tokenizer.next(); // eat name
-  println!("Token: {:?}", tokenizer.current);
   
   let value = match &tokenizer.current {
     Some(token) => match token {
